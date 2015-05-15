@@ -14,9 +14,9 @@ namespace CarryAshe
         #endregion
 
         #region Properties
-        public  HitChance CustomHitChance
+        public HitChance ComboHitChance
         {
-            get { return GetHitchance(); }
+            get { return Menu.GetItemEndKey("HitChance", "Combo").GetHitchance(); }
         }
 
 
@@ -42,50 +42,59 @@ namespace CarryAshe
 
             Menu.AddSubMenu(targetSelector);
 
-            var drawingMenu = new Menu("Drawings", "CarryAshe.Drawings");
-            drawingMenu.AddItem(new MenuItem("CarryAshe.Drawings.Off", "Activate Drawings").SetValue(true));
-            drawingMenu.AddItem(new MenuItem("CarryAshe.Drawings.W", "Draw W Range").SetValue(new Circle()));
-           // drawingMenu.AddItem(new MenuItem("CarryAshe.Drawings.FillColor", "Fill colour", true).SetValue(new Circle(true, Color.FromArgb(204, 204, 0, 0))));
+            var drawingMenu = new Menu("Drawings", _parentAssembly.GetNamespace() + ".Drawings");
+            drawingMenu.AddItem("Off", "Activate Drawings", true);
+            drawingMenu.AddItem("W", "Draw W Range", new Circle());
+            drawingMenu.AddItem("AutoR", "Draw Auto R Range", new Circle());
+            drawingMenu.AddItem("FillColor", "Fill color",new Circle(true, Color.FromArgb(204, 204, 0, 0)));
             Menu.AddSubMenu(drawingMenu);
 
-            var comboMenu = new Menu("Combo", "CarryAshe.Combo");
-            comboMenu.AddItem(new MenuItem("CarryAshe.Combo.HitChance", "Hitchance").SetValue(new StringList(new[] { "Low", "Medium", "High", "Very High" }, 3)));
-            comboMenu.AddItem(new MenuItem("CarryAshe.Combo.UseQ", "Use Q").SetValue(true));
-            comboMenu.AddItem(new MenuItem("CarryAshe.Combo.UseW", "Use W").SetValue(true));
-            comboMenu.AddItem(new MenuItem("CarryAshe.Combo.UseR", "Use R").SetValue(true));
+            var comboMenu = new Menu("Combo", _parentAssembly.GetNamespace() + ".Combo");
+            comboMenu.AddItem("HitChance", "Hitchance", new StringList(new[] { "Low", "Medium", "High", "Very High" }, 3));
+            comboMenu.AddItem("UseQ", "Use Q", true);
+            comboMenu.AddItem("UseW", "Use W", true);
+            comboMenu.AddItem("UseR", "Use R", true);
 
             Menu.AddSubMenu(comboMenu);
 
-            var harassMenu = new Menu("Harrass", "CarryAshe.Harass");
-            harassMenu.AddItem(new MenuItem("CarryAshe.Harass.UseQ", "Use Q").SetValue(true));
-            harassMenu.AddItem(new MenuItem("CarryAshe.Harass.UseW", "Use W").SetValue(true));
-            harassMenu.AddItem(new MenuItem("CarryAshe.Harass.ManaThreshold", "Minimum mana for harass")).SetValue(new Slider(55));
+            var harassMenu = new Menu("Harrass", _parentAssembly.GetNamespace() + ".Harass");
+            harassMenu.AddItem("UseQ", "Use Q", true);
+            harassMenu.AddItem("UseW", "Use W", true);
+            harassMenu.AddItem("ManaThreshold", "Minimum mana for harass", new Slider(55));
 
             Menu.AddSubMenu(harassMenu);
 
-            var clearMenu = new Menu("Lane & Jungler Clear", "CarryAshe.Clear");
-            clearMenu.AddItem(new MenuItem("CarryAshe.Clear.UseQ", "Use Q").SetValue(true));
-            clearMenu.AddItem(new MenuItem("CarryAshe.Clear.UseW", "Use W").SetValue(true));
+            var clearMenu = new Menu("Lane & Jungler Clear", _parentAssembly.GetNamespace() + ".Clear");
+            clearMenu.AddItem("UseQ", "Use Q", true);
+            clearMenu.AddItem("UseW", "Use W", true);
 
             Menu.AddSubMenu(clearMenu);
 
-            var itemMenu = new Menu("Items", "Items");
-            itemMenu.AddItem(new MenuItem("CarryAshe.Items.Youmuu", "Use Youmuu's Ghostblade").SetValue(true));
-            itemMenu.AddItem(new MenuItem("CarryAshe.Items.Cutlass", "Use Cutlass").SetValue(true));
-            itemMenu.AddItem(new MenuItem("CarryAshe.Items.Blade", "Use Blade of the Ruined King").SetValue(true));
-            itemMenu.AddItem(new MenuItem("CarryAshe.Items.azeazzaeae", ""));
-            itemMenu.AddItem(new MenuItem("CarryAshe.Items.Blade.EnemyEHP", "Enemy HP Percentage").SetValue(new Slider(80, 100, 0)));
-            itemMenu.AddItem(new MenuItem("CarryAshe.Items.Blade.EnemyMHP", "My HP Percentage").SetValue(new Slider(80, 100, 0)));
-            
+            var itemMenu = new Menu("Items", _parentAssembly.GetNamespace() + ".Items");
+            itemMenu.AddItem("Youmuu", "Use Youmuu's Ghostblade", true);
+            itemMenu.AddItem("Cutlass", "Use Cutlass", true);
+            itemMenu.AddItem("Blade", "Use Blade of the Ruined King", true);
+            itemMenu.AddItem(new MenuItem(_parentAssembly.GetNamespace() + ".Items.azeazzaeae", ""));
+            itemMenu.AddItem("BladeEnemyEHP", "Enemy HP Percentage", new Slider(80, 100, 0));
+            itemMenu.AddItem("BladeEnemyMHP", "My HP Percentage", new Slider(80, 100, 0));
+
             Menu.AddSubMenu(itemMenu);
 
+            var miscMenu = new Menu("Misc", _parentAssembly.GetNamespace() + ".Misc");
+            var miscAutoRMenu = new Menu("Auto R", _parentAssembly.GetNamespace() + ".Misc.AutoR");
+            miscAutoRMenu.AddItem("Toggle", "Auto R when in range", new KeyBind(84, KeyBindType.Press)); // T Key
+            miscAutoRMenu.AddItem("Range", "Auto R Range", new Slider(2000, Convert.ToInt32(_parentAssembly.Player.AttackRange), 4000));
+            miscAutoRMenu.AddItem("Hitchance", "Auto R Hitchance", new StringList(new[] { "Low", "Medium", "High", "Very High" }, 3));
+            miscMenu.AddSubMenu(miscAutoRMenu);
+
+            Menu.AddSubMenu(miscMenu);
 
             var credits = new Menu("Credits", "Romesti");
-            credits.AddItem(new MenuItem("CarryAshe.Paypal", "You can make a donation via paypal :)"));
+            credits.AddItem(new MenuItem(_parentAssembly.GetNamespace() + ".Paypal", "You can make a donation via paypal :)"));
             Menu.AddSubMenu(credits);
 
             Menu.AddItem(new MenuItem("422442fsaafs4242f", ""));
-            Menu.AddItem(new MenuItem("422442fsaafsf", "Version "+Ashe.ScriptVersion));
+            Menu.AddItem(new MenuItem("422442fsaafsf", "Version " + _parentAssembly.ScriptVersion));
             Menu.AddItem(new MenuItem("fsasfafsfsafsa", "Made By Romesti"));
 
             Menu.AddToMainMenu();
@@ -94,25 +103,7 @@ namespace CarryAshe
             Console.WriteLine("Menu Loaded lol");
         }
 
-        /// <summary>
-        /// Credit to jQuery
-        /// </summary>
-        /// <returns>The hitchance selected in the menu</returns>
-        private  HitChance GetHitchance()
-        {
-            switch (Menu.Item("CarryAshe.Combo.HitChance").GetValue<StringList>().SelectedIndex)
-            {
-                case 0:
-                    return HitChance.Low;
-                case 1:
-                    return HitChance.Medium;
-                case 2:
-                    return HitChance.High;
-                case 3:
-                    return HitChance.VeryHigh;
-                default:
-                    return HitChance.Medium;
-            }
-        }
+
+
     }
 }

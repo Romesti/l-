@@ -67,17 +67,17 @@ namespace CarryAshe
         public bool IsQMaxStacked { get { return Player.HasBuff("AsheQCastReady"); } }
         #endregion
 
-        #region Static Helpers
+        #region Helpers
 
         /// <summary>
         /// Getter for current script version
         /// </summary>
-        public static String ScriptVersion { get { return typeof(Ashe).Assembly.GetName().Version.ToString(); } }
+        public  String ScriptVersion { get { return typeof(Ashe).Assembly.GetName().Version.ToString(); } }
 
         /// <summary>
         /// Getter for the Player
         /// </summary>
-        private static Obj_AI_Hero Player
+        public  Obj_AI_Hero Player
         {
             get { return ObjectManager.Player; }
         }
@@ -98,10 +98,10 @@ namespace CarryAshe
             _spells[Spells.R].SetSkillshot(0.5f, 100, 1600, false, SkillshotType.SkillshotCone);
         }
         #endregion
-
+        
         #region Functions
 
-        public Spell GetSpell(Spells spell)
+        internal Spell GetSpell(Spells spell)
         {
             return _spells[spell];
         }
@@ -119,7 +119,7 @@ namespace CarryAshe
 
             Game.OnUpdate += onGameUpdate;
             Drawing.OnDraw += this._drawings.Drawing_OnDraw;
-            Notifications.AddNotification(String.Format("CarryAshe by Romesti v{0}", ScriptVersion), 1000);
+            Notifications.AddNotification(String.Format("{0} by Romesti v{1}",this.GetNamespace(),ScriptVersion), 1000);
 
         }
 
@@ -142,6 +142,8 @@ namespace CarryAshe
                     break;
             }
 
+            AutoR();
+
         }
 
         #region itemusage
@@ -152,12 +154,12 @@ namespace CarryAshe
             var ghost = ItemData.Youmuus_Ghostblade.GetItem();
             var cutlass = ItemData.Bilgewater_Cutlass.GetItem();
 
-            var useYoumuu = Menu.Item("CarryAshe.Items.Youmuu").GetValue<bool>();
-            var useCutlass = Menu.Item("CarryAshe.Items.Cutlass").GetValue<bool>();
-            var useBlade = Menu.Item("CarryAshe.Items.Blade").GetValue<bool>();
+            var useYoumuu = Menu.GetItemEndKey("Youmuu", "Items").GetValue<bool>();
+            var useCutlass = Menu.GetItemEndKey("Cutlass", "Items").GetValue<bool>();
+            var useBlade = Menu.GetItemEndKey("Blade", "Items").GetValue<bool>();
 
-            var useBladeEhp = Menu.Item("CarryAshe.Items.Blade.EnemyEHP").GetValue<Slider>().Value;
-            var useBladeMhp = Menu.Item("CarryAshe.Items.Blade.EnemyMHP").GetValue<Slider>().Value;
+            var useBladeEhp = Menu.GetItemEndKey("BladeEnemyEHP","Items").GetValue<Slider>().Value;
+            var useBladeMhp = Menu.GetItemEndKey("BladeEnemyMHP", "Items").GetValue<Slider>().Value;
 
             if (botrk.IsReady() && botrk.IsOwned(Player) && botrk.IsInRange(target) &&
                 target.HealthPercent <= useBladeEhp && useBlade)
@@ -184,13 +186,13 @@ namespace CarryAshe
         }
         #endregion
 
-
+        #region Main Behaviors
         public  void Combo()
         {
-            var useQ = Menu.Item("CarryAshe.Combo.UseQ").GetValue<bool>();
-            var useW = Menu.Item("CarryAshe.Combo.UseW").GetValue<bool>();
-            var useR = Menu.Item("CarryAshe.Combo.UseR").GetValue<bool>();
-            var target = TargetSelector.GetTarget(Player.AttackRange, TargetSelector.DamageType.Physical);
+            var useQ = Menu.GetItemEndKey("UseQ").GetValue<bool>();
+            var useW = Menu.GetItemEndKey("UseW").GetValue<bool>();
+            var useR = Menu.GetItemEndKey("UseR").GetValue<bool>();
+            var target = TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(null)+65, TargetSelector.DamageType.Physical);
             if (target == null || !target.IsValid)
                 return;
 
@@ -201,26 +203,26 @@ namespace CarryAshe
                 _spells[Spells.Q].Cast();
             }
             if (useW && _spells[Spells.W].IsReady())
-                _spells[Spells.W].CastIfHitchanceEquals(target, _menu.CustomHitChance);
+                _spells[Spells.W].CastIfHitchanceEquals(target, _menu.ComboHitChance);
 
             if (useR && _spells[Spells.R].IsReady())
             {
-                _spells[Spells.R].CastIfHitchanceEquals(target, _menu.CustomHitChance);
+                _spells[Spells.R].CastIfHitchanceEquals(target, _menu.ComboHitChance);
             }
 
         }
 
         public  void Harass()
         {
-            var target = TargetSelector.GetTarget(Player.AttackRange, TargetSelector.DamageType.Physical);
+            var target = TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(null) + 65, TargetSelector.DamageType.Physical);
             if (target == null || !target.IsValid)
                 return;
 
 
 
-            var useW = Menu.Item("CarryAshe.Harass.UseW").GetValue<bool>();
-            var useQ = Menu.Item("CarryAshe.Harass.UseQ").GetValue<bool>();
-            var manaThreshold = Menu.Item("CarryAshe.Harass.ManaThreshold").GetValue<Slider>().Value;
+            var useW = Menu.GetItemEndKey("UseW").GetValue<bool>();
+            var useQ = Menu.GetItemEndKey("UseQ").GetValue<bool>();
+            var manaThreshold = Menu.GetItemEndKey("ManaThreshold").GetValue<Slider>().Value;
 
             if (Player.ManaPercent < manaThreshold)
                 return;
@@ -231,25 +233,32 @@ namespace CarryAshe
             }
 
             if (useW && _spells[Spells.W].IsReady())
-                _spells[Spells.W].CastIfHitchanceEquals(target, _menu.CustomHitChance);
+                _spells[Spells.W].CastIfHitchanceEquals(target, _menu.ComboHitChance);
 
         }
 
         public  void LaneClear()
         {
-            var useQ = Menu.Item("CarryAshe.Clear.UseQ").GetValue<bool>();
-            var useW = Menu.Item("CarryAshe.Clear.UseW").GetValue<bool>();
+            var minions = MinionManager.GetMinions(
+                            ObjectManager.Player.ServerPosition,
+                                    _spells[Spells.W].Range, MinionTypes.All,
+                                    MinionTeam.Enemy,
+                                    MinionOrderTypes.MaxHealth)
+                            .Where(minion => minion.IsValidTarget(_spells[Spells.W].Range));
 
-            
+            var useQ = Menu.GetItemEndKey("UseQ", "Clear").GetValue<bool>();
+            var useW = Menu.GetItemEndKey("UseW", "Clear").GetValue<bool>();
 
-            if (useQ && this.IsQMaxStacked && _spells[Spells.Q].IsReady())
+            if (minions.FirstOrDefault() == null) return;
+
+            if (useQ && this.IsQMaxStacked && _spells[Spells.Q].IsReady() && minions.Count(m => Orbwalker.InAutoAttackRange(m)) > 1)
             {
                 _spells[Spells.Q].Cast();
             }
 
-            if (useW && _spells[Spells.W].IsReady())
+            if (useW && _spells[Spells.W].IsReady() && minions.Count() > 3)
             {
-                _spells[Spells.W].CastOnBestTarget(aoe: true);
+                _spells[Spells.W].Cast(minions.Last(), false);
             }
         }
 
@@ -258,8 +267,9 @@ namespace CarryAshe
             var minions = MinionManager.GetMinions(
             ObjectManager.Player.ServerPosition, _spells[Spells.W].Range, MinionTypes.All, MinionTeam.Neutral, MinionOrderTypes.MaxHealth);
 
-            var useQ = Menu.Item("CarryAshe.Clear.UseQ").GetValue<bool>();
-            var useW = Menu.Item("CarryAshe.Clear.UseW").GetValue<bool>();
+            var useQ = Menu.GetItemEndKey("UseQ", "Clear").GetValue<bool>();
+            var useW = Menu.GetItemEndKey("UseW", "Clear").GetValue<bool>();
+
 
             var wMinion = minions.FindAll(minion => minion.IsValidTarget(_spells[Spells.W].Range)).FirstOrDefault();
             
@@ -276,7 +286,25 @@ namespace CarryAshe
             }
             
         }
+        #endregion
 
+        #region Advanced Behaviors
+        public void AutoR()
+        {
+            var autoR = Menu.GetItemEndKey("Toggle", "Misc.AutoR").GetValue<KeyBind>().Active;
+            if (!autoR) return;
+            var range = Menu.GetItemEndKey("Range", "Misc.AutoR").GetValue<Slider>().Value;
+            var hitchance = Menu.GetItemEndKey("Hitchance", "Misc.AutoR").GetHitchance();
+            var target = TargetSelector.GetTarget(range, TargetSelector.DamageType.Physical, false);
+
+            if (target == null) return;
+
+            if (_spells[Spells.R].IsReady())
+            {
+                _spells[Spells.R].CastIfHitchanceEquals(target,hitchance);
+            }
+        }
+        #endregion
 
         #region ComboDamage
 
