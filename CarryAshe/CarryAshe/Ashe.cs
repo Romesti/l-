@@ -186,23 +186,32 @@ namespace CarryAshe
         }
         #endregion
 
+
+        
         #region Main Behaviors
         public  void Combo()
         {
             var useQ = Menu.GetItemEndKey("UseQ").GetValue<bool>();
             var useW = Menu.GetItemEndKey("UseW").GetValue<bool>();
+            var useWMana = Menu.GetItemEndKey("UseWMana").GetValue<Slider>().Value;
             var useR = Menu.GetItemEndKey("UseR").GetValue<bool>();
-            var target = TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(null)+65, TargetSelector.DamageType.Physical);
+            var saveR = Menu.GetItemEndKey("SaveR").GetValue<bool>();
+            var target = TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(Player)+65, TargetSelector.DamageType.Physical);
+            
             if (target == null || !target.IsValid)
                 return;
 
+            Func<Spells,bool> chechForUlt = (spellslot) => {
+                return _spells[Spells.R].IsReady() && saveR && Player.Mana - 50 < 100; 
+            };
+
             Items(target);
 
-            if (useQ && this.IsQMaxStacked&& _spells[Spells.Q].IsReady())
+            if ( useQ && !chechForUlt(Spells.Q) &&this.IsQMaxStacked&& _spells[Spells.Q].IsReady())
             {
                 _spells[Spells.Q].Cast();
             }
-            if (useW && _spells[Spells.W].IsReady())
+            if (useW && !chechForUlt(Spells.W) && Player.ManaPercent > useWMana && _spells[Spells.W].IsReady())
                 _spells[Spells.W].CastIfHitchanceEquals(target, _menu.ComboHitChance);
 
             if (useR && _spells[Spells.R].IsReady())

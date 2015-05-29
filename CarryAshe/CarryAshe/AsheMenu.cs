@@ -53,7 +53,9 @@ namespace CarryAshe
             comboMenu.AddItem("HitChance", "Hitchance", new StringList(new[] { "Low", "Medium", "High", "Very High" }, 3));
             comboMenu.AddItem("UseQ", "Use Q", true);
             comboMenu.AddItem("UseW", "Use W", true);
+            comboMenu.AddItem("UseWMana", "Minimum Mana to Use W", new Slider(10,0,100));
             comboMenu.AddItem("UseR", "Use R", true);
+            comboMenu.AddItem("SaveR", "Save Mana for R", true);
 
             Menu.AddSubMenu(comboMenu);
 
