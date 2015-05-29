@@ -6,7 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
+using CarryLibrary.Extensions;
 namespace PushForce
 {
     class Program
@@ -42,18 +42,19 @@ namespace PushForce
         {
             if (menu.Item("getCurrentPosition").GetValue<KeyBind>().Active)
             {
-                var minions = MinionManager.GetMinions(1000, team: MinionTeam.All);
+                var minions = MinionManager.GetMinions(1000, MinionTypes.All, MinionTeam.All);
+                
                 string s = "";
                 if (minions.FirstOrDefault(m => m.IsEnemy) != null)
                 {
-                    s += "enemy " + minions.FirstOrDefault(m => m.IsEnemy);
+                    s += "enemy " + minions.FirstOrDefault(m => m.IsEnemy).GetLane();
                 }
                 if (minions.FirstOrDefault(m => m.IsAlly) != null)
                 {
-                    s += " ally " + minions.FirstOrDefault(m => m.IsAlly);
+                    s += " ally " + minions.FirstOrDefault(m => m.IsAlly).GetLane();
                 }
-                if(s != "")
-                    Notifications.AddNotification(s,1000);
+                if (s != "")
+                    Notifications.AddNotification(s);
             }
 
         }

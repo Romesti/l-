@@ -8,9 +8,10 @@ namespace CarryLibrary.Enumerations
 {
     public enum Lane
     {
-        Top,
-        Mid,
-        Bottom,
-        Jungle
+        Bottom = 0,
+        Mid = 1,
+        Top = 2,
+        Jungle = 3,
+        Unknown = -1,
     }
 }
