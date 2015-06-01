@@ -43,7 +43,6 @@ namespace CarryAshe
 
         public void Drawing_OnDraw(EventArgs args)
         {
-
             var drawOff = _parentAssembly.Menu.GetItemEndKey("Off", _menuName).GetValue<bool>();
             var drawAutoR = _parentAssembly.Menu.GetItemEndKey("AutoR", _menuName).GetValue<Circle>();
             var autoRRange = _parentAssembly.Menu.GetItemEndKey("Range", "Misc.AutoR").GetValue<Slider>().Value;

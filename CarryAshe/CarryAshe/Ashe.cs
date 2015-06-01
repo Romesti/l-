@@ -93,7 +93,9 @@ namespace CarryAshe
         public Ashe()
         {
             _menu = new AsheMenu(this);
+
             _drawings = new AsheDrawings(this);
+
             _spells[Spells.W].SetSkillshot(0.5f, 100, 900, true, SkillshotType.SkillshotCone);
             _spells[Spells.R].SetSkillshot(0.5f, 100, 1600, false, SkillshotType.SkillshotCone);
         }
@@ -112,6 +114,8 @@ namespace CarryAshe
         /// <param name="args"></param>
         public void  OnLoad(EventArgs args)
         {
+            Console.WriteLine("loadin");
+
             if (Player.ChampionName != "Ashe")
                 return;
             _menu.Initialize();
