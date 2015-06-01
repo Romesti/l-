@@ -82,6 +82,17 @@ namespace CarryAshe
             get { return ObjectManager.Player; }
         }
 
+
+        public double TimeToHit(AttackableUnit target)
+        {
+            return Player.Distance(target, false) / Orbwalking.GetMyProjectileSpeed(); 
+        }
+
+        public double Time(AttackableUnit target)
+        {
+            return this.TimeToHit(target) + Player.AttackCastDelay;
+        }
+
         #endregion
 
 
@@ -312,6 +323,19 @@ namespace CarryAshe
             {
                 _spells[Spells.R].CastIfHitchanceEquals(target,hitchance);
             }
+        }
+
+        private void Kite(AttackableUnit target)
+        {
+            Orbwalker.ForceTarget(target);
+        }
+
+        public void KiteBehavior()
+        {
+            var enemies = HeroManager.Enemies
+                                .Where(enemy=>Orbwalking.InAutoAttackRange(enemy));
+
+            var target = 
         }
         #endregion
 
