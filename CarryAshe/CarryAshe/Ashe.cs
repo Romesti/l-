@@ -6,6 +6,8 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
+using ItemData = LeagueSharp.Common.Data.ItemData;
+
 namespace CarryAshe
 {
     internal enum Spells
@@ -53,13 +55,11 @@ namespace CarryAshe
         /// <summary>
         /// Getter for L#Menu
         /// </summary>
-        public Menu Menu {get{return _menu.Menu;}}
+        public Menu Menu { get { return _menu.Menu; } }
 
         /// <summary>
-        /// Getter for Orbwalker
+        /// Getter for Program.Orbwalker
         /// </summary>
-        public Orbwalking.Orbwalker Orbwalker { get; set; }
-
 
 
         public int QStacks { get { return Player.GetBuffCount("AsheQ") + Player.GetBuffCount("AsheQCastReady"); } }
@@ -72,12 +72,12 @@ namespace CarryAshe
         /// <summary>
         /// Getter for current script version
         /// </summary>
-        public  String ScriptVersion { get { return typeof(Ashe).Assembly.GetName().Version.ToString(); } }
+        public String ScriptVersion { get { return typeof(Ashe).Assembly.GetName().Version.ToString(); } }
 
         /// <summary>
         /// Getter for the Player
         /// </summary>
-        public  Obj_AI_Hero Player
+        public Obj_AI_Hero Player
         {
             get { return ObjectManager.Player; }
         }
@@ -85,7 +85,7 @@ namespace CarryAshe
 
         public double TimeToHit(AttackableUnit target)
         {
-            return Player.Distance(target, false) / Orbwalking.GetMyProjectileSpeed(); 
+            return Player.Distance(target, false) / Orbwalking.GetMyProjectileSpeed();
         }
 
         public double Time(AttackableUnit target)
@@ -109,7 +109,7 @@ namespace CarryAshe
             _spells[Spells.R].SetSkillshot(0.5f, 100, 1600, false, SkillshotType.SkillshotCone);
         }
         #endregion
-        
+
         #region Functions
 
         internal Spell GetSpell(Spells spell)
@@ -121,7 +121,7 @@ namespace CarryAshe
         /// OnLoad Callback
         /// </summary>
         /// <param name="args"></param>
-        public void  OnLoad(EventArgs args)
+        public void OnLoad(EventArgs args)
         {
             if (Player.ChampionName != "Ashe")
                 return;
@@ -130,16 +130,34 @@ namespace CarryAshe
 
             Game.OnUpdate += onGameUpdate;
             Drawing.OnDraw += this._drawings.Drawing_OnDraw;
-            Notifications.AddNotification(String.Format("{0} by Romesti v{1}",this.GetNamespace(),ScriptVersion), 1000);
+            Notifications.AddNotification(String.Format("{0} by Romesti v{1}", this.GetNamespace(), ScriptVersion), 1000);
+            Orbwalking.BeforeAttack += Orbwalking_BeforeAttack;
+        }
 
+        void Orbwalking_BeforeAttack(Orbwalking.BeforeAttackEventArgs args)
+        {
+            var menuItemQ = _menu.GetKeyForMode("UseQ",Program.Orbwalker.ActiveMode);
+            Console.WriteLine("Mode : " + menuItemQ);
+            if (menuItemQ == null) return;
+            Console.WriteLine("not null");
+            var useQ = menuItemQ.GetValue<bool>();
+
+            if(!useQ) return;
+
+            if (useQ && !chechForUlt(Spells.Q) && this.IsQMaxStacked && _spells[Spells.Q].IsReady())
+            {
+                _spells[Spells.Q].Cast();
+            }
         }
 
 
-        private  void onGameUpdate(EventArgs args)
+
+        private void onGameUpdate(EventArgs args)
         {
             if (Player.IsDead)
                 return;
-            switch (Orbwalker.ActiveMode)
+
+            switch (Program.Orbwalker.ActiveMode)
             {
                 case Orbwalking.OrbwalkingMode.Combo:
                     Combo();
@@ -149,7 +167,7 @@ namespace CarryAshe
                     JungleClear();
                     break;
                 case Orbwalking.OrbwalkingMode.Mixed:
-                    Harass();
+                    Mixed();
                     break;
             }
 
@@ -157,68 +175,30 @@ namespace CarryAshe
 
         }
 
-        #region itemusage
-
-        private  void Items(Obj_AI_Base target)
+        #region Helpers
+        private bool chechForUlt(Spells spellslot)
         {
-            var botrk = ItemData.Blade_of_the_Ruined_King.GetItem();
-            var ghost = ItemData.Youmuus_Ghostblade.GetItem();
-            var cutlass = ItemData.Bilgewater_Cutlass.GetItem();
-
-            var useYoumuu = Menu.GetItemEndKey("Youmuu", "Items").GetValue<bool>();
-            var useCutlass = Menu.GetItemEndKey("Cutlass", "Items").GetValue<bool>();
-            var useBlade = Menu.GetItemEndKey("Blade", "Items").GetValue<bool>();
-
-            var useBladeEhp = Menu.GetItemEndKey("BladeEnemyEHP","Items").GetValue<Slider>().Value;
-            var useBladeMhp = Menu.GetItemEndKey("BladeEnemyMHP", "Items").GetValue<Slider>().Value;
-
-            if (botrk.IsReady() && botrk.IsOwned(Player) && botrk.IsInRange(target) &&
-                target.HealthPercent <= useBladeEhp && useBlade)
-            {
-                botrk.Cast(target);
-            }
-
-            if (botrk.IsReady() && botrk.IsOwned(Player) && botrk.IsInRange(target) &&
-                Player.HealthPercent <= useBladeMhp && useBlade)
-            {
-                botrk.Cast(target);
-            }
-
-            if (cutlass.IsReady() && cutlass.IsOwned(Player) && cutlass.IsInRange(target) &&
-                target.HealthPercent <= useBladeEhp && useCutlass)
-            {
-                cutlass.Cast(target);
-            }
-
-            if (ghost.IsReady() && ghost.IsOwned(Player) && Player.Distance(target,false) < Player.AttackRange*2.0 && useYoumuu)
-            {
-                ghost.Cast();
-            }
+            var menuItem = _menu.GetKeyForMode("SaveR", Program.Orbwalker.ActiveMode);
+            var saveR = menuItem == null ? false : menuItem.GetValue<bool>();
+            return _spells[Spells.R].IsReady() && saveR && Player.Mana - 50 < 100;
         }
         #endregion
 
-
-        
         #region Main Behaviors
-        public  void Combo()
+        public void Combo(Obj_AI_Hero target = null)
         {
-            var useQ = Menu.GetItemEndKey("UseQ").GetValue<bool>();
+            target = target ?? TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(null) + 65, TargetSelector.DamageType.Physical);
+            var useQ = false;// Menu.GetItemEndKey("UseQ").GetValue<bool>();
             var useW = Menu.GetItemEndKey("UseW").GetValue<bool>();
             var useWMana = Menu.GetItemEndKey("UseWMana").GetValue<Slider>().Value;
             var useR = Menu.GetItemEndKey("UseR").GetValue<bool>();
             var saveR = Menu.GetItemEndKey("SaveR").GetValue<bool>();
-            var target = TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(Player)+65, TargetSelector.DamageType.Physical);
-            
+
             if (target == null || !target.IsValid)
                 return;
 
-            Func<Spells,bool> chechForUlt = (spellslot) => {
-                return _spells[Spells.R].IsReady() && saveR && Player.Mana - 50 < 100; 
-            };
 
-            Items(target);
-
-            if ( useQ && !chechForUlt(Spells.Q) &&this.IsQMaxStacked&& _spells[Spells.Q].IsReady())
+            if (useQ && !chechForUlt(Spells.Q) && this.IsQMaxStacked && _spells[Spells.Q].IsReady())
             {
                 _spells[Spells.Q].Cast();
             }
@@ -232,16 +212,16 @@ namespace CarryAshe
 
         }
 
-        public  void Harass()
+        public void Mixed(Obj_AI_Hero target = null)
         {
-            var target = TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(null) + 65, TargetSelector.DamageType.Physical);
+            target = target ?? TargetSelector.GetTarget(Orbwalking.GetRealAutoAttackRange(null) + 65, TargetSelector.DamageType.Physical);
             if (target == null || !target.IsValid)
                 return;
 
 
 
             var useW = Menu.GetItemEndKey("UseW").GetValue<bool>();
-            var useQ = Menu.GetItemEndKey("UseQ").GetValue<bool>();
+            var useQ = false;// Menu.GetItemEndKey("UseQ").GetValue<bool>();
             var manaThreshold = Menu.GetItemEndKey("ManaThreshold").GetValue<Slider>().Value;
 
             if (Player.ManaPercent < manaThreshold)
@@ -257,7 +237,7 @@ namespace CarryAshe
 
         }
 
-        public  void LaneClear()
+        public void LaneClear()
         {
             var minions = MinionManager.GetMinions(
                             ObjectManager.Player.ServerPosition,
@@ -266,12 +246,12 @@ namespace CarryAshe
                                     MinionOrderTypes.MaxHealth)
                             .Where(minion => minion.IsValidTarget(_spells[Spells.W].Range));
 
-            var useQ = Menu.GetItemEndKey("UseQ", "Clear").GetValue<bool>();
+            var useQ = false;// Menu.GetItemEndKey("UseQ", "Clear").GetValue<bool>();
             var useW = Menu.GetItemEndKey("UseW", "Clear").GetValue<bool>();
 
             if (minions.FirstOrDefault() == null) return;
 
-            if (useQ && this.IsQMaxStacked && _spells[Spells.Q].IsReady() && minions.Count(m => Orbwalker.InAutoAttackRange(m)) > 1)
+            if (useQ && this.IsQMaxStacked && _spells[Spells.Q].IsReady() && minions.Count(m => Program.Orbwalker.InAutoAttackRange(m)) > 1)
             {
                 _spells[Spells.Q].Cast();
             }
@@ -287,12 +267,12 @@ namespace CarryAshe
             var minions = MinionManager.GetMinions(
             ObjectManager.Player.ServerPosition, _spells[Spells.W].Range, MinionTypes.All, MinionTeam.Neutral, MinionOrderTypes.MaxHealth);
 
-            var useQ = Menu.GetItemEndKey("UseQ", "Clear").GetValue<bool>();
+            var useQ = false;// Menu.GetItemEndKey("UseQ", "Clear").GetValue<bool>();
             var useW = Menu.GetItemEndKey("UseW", "Clear").GetValue<bool>();
 
 
             var wMinion = minions.FindAll(minion => minion.IsValidTarget(_spells[Spells.W].Range)).FirstOrDefault();
-            
+
             if (wMinion == null) return;
 
             if (useQ && this.IsQMaxStacked && _spells[Spells.Q].IsReady())
@@ -304,7 +284,7 @@ namespace CarryAshe
             {
                 _spells[Spells.W].Cast(wMinion);
             }
-            
+
         }
         #endregion
 
@@ -321,27 +301,28 @@ namespace CarryAshe
 
             if (_spells[Spells.R].IsReady())
             {
-                _spells[Spells.R].CastIfHitchanceEquals(target,hitchance);
+                _spells[Spells.R].CastIfHitchanceEquals(target, hitchance);
             }
         }
 
-        private void Kite(AttackableUnit target)
+        private void Kite(Obj_AI_Base target)
         {
-            Orbwalker.ForceTarget(target);
+            Program.Orbwalker.ForceTarget(target);
         }
 
         public void KiteBehavior()
         {
             var enemies = HeroManager.Enemies
-                                .Where(enemy=>Orbwalking.InAutoAttackRange(enemy));
+                                .Where(enemy => Orbwalking.InAutoAttackRange(enemy));
 
-            var target = 
+            var target = enemies.FirstOrDefault(enemy => !(enemy.HasBuff("")));
+
         }
         #endregion
 
         #region ComboDamage
 
-        public  float GetComboDamage(Obj_AI_Base enemy)
+        public float GetComboDamage(Obj_AI_Base enemy)
         {
             float damage = 0;
 

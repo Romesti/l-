@@ -18,6 +18,11 @@ namespace CarryAshe
             return o.GetType().Namespace;
         }
 
+        public static String GetTypeName(this Object o)
+        {
+            return o.GetType().Name;
+        }
+
         public static String GetCurrentFunctionName()
         {
             return System.Reflection.MethodBase.GetCurrentMethod().Name;
@@ -29,13 +34,44 @@ namespace CarryAshe
                 MethodBase current = System.Reflection.MethodBase.GetCurrentMethod();
                 Namespace = current.DeclaringType.Namespace;
             }
-            return menu.Item(String.Format("{0}.{1}.{2}", Namespace, parentKey, key));
+            try
+            {
+                return menu.Item(String.Format("{0}.{1}.{2}", Namespace, parentKey, key));
+            }
+            catch
+            {
+                return null;
+            }
         }
 
         public static MenuItem AddItem<T>(this Menu m,string key,string displayName,T value){
             var me = new MenuItem(String.Format("{0}.{1}", m.Name, key), displayName).SetValue(value);
             m.AddItem(me);
             return me;
+        }
+
+
+        public static string ToTitleCase(this string value)
+        {
+            string[] spacedWords
+                = ((IEnumerable<char>)value)
+                .Select(c => c == char.ToUpper(c)
+                    ? " " + c.ToString()
+                    : c.ToString()).ToArray();
+
+            return (String.Join("", spacedWords)).Trim();
+        }
+
+        public static string ToCamelCase(this string input)
+        {
+            return new string(input.ToCharArray()
+                .Where(c => !Char.IsWhiteSpace(c))
+                .ToArray());
+        }
+
+        public static bool IsCC(this Obj_AI_Hero o)
+        {
+            return o.IsStunned || o.IsRooted || o.IsCharmed || o.IsPacified;
         }
 
         public static HitChance GetHitchance(this MenuItem m)

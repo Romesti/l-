@@ -20,22 +20,31 @@ namespace CarryAshe
         }
 
 
+        private Dictionary<Orbwalking.OrbwalkingMode, string> _menuKeys = new Dictionary<Orbwalking.OrbwalkingMode, string>()
+        {
+            {Orbwalking.OrbwalkingMode.Combo,"Combo"},
+            {Orbwalking.OrbwalkingMode.LastHit,""},
+            {Orbwalking.OrbwalkingMode.Mixed,"Mixed"},
+            {Orbwalking.OrbwalkingMode.LaneClear,"Clear"},
+            {Orbwalking.OrbwalkingMode.None,""},
+        };
+
+        public MenuItem GetKeyForMode(string key,Orbwalking.OrbwalkingMode mode)
+        {
+            Console.WriteLine("key: " + key + " mode: " + mode + " res: " + _menuKeys[mode]);
+            return Menu.GetItemEndKey(key, _menuKeys[mode]);
+        }
+
         #endregion
-        public Menu Menu { get; private set; }
+        public Menu Menu { get { return Program.RootMenu; } }
 
 
         public AsheMenu(Ashe parentAssembly)
         {
             this._parentAssembly = parentAssembly;
-            Menu = new Menu("CarryAshe", "menu", true);
         }
         public void Initialize()
         {
-            Menu = new Menu("CarryAshe", "menu", true);
-            var orbwalkerMenu = new Menu("Orbwalker", "orbwalker");
-            _parentAssembly.Orbwalker = new Orbwalking.Orbwalker(orbwalkerMenu);
-
-            Menu.AddSubMenu(orbwalkerMenu);
 
             var targetSelector = new Menu("Target Selector", "TargetSelector");
             TargetSelector.AddToMenu(targetSelector);
@@ -59,7 +68,7 @@ namespace CarryAshe
 
             Menu.AddSubMenu(comboMenu);
 
-            var harassMenu = new Menu("Harrass", _parentAssembly.GetNamespace() + ".Harass");
+            var harassMenu = new Menu("Harrass", _parentAssembly.GetNamespace() + ".Mixed");
             harassMenu.AddItem("UseQ", "Use Q", true);
             harassMenu.AddItem("UseW", "Use W", true);
             harassMenu.AddItem("ManaThreshold", "Minimum mana for harass", new Slider(55));
@@ -72,15 +81,6 @@ namespace CarryAshe
 
             Menu.AddSubMenu(clearMenu);
 
-            var itemMenu = new Menu("Items", _parentAssembly.GetNamespace() + ".Items");
-            itemMenu.AddItem("Youmuu", "Use Youmuu's Ghostblade", true);
-            itemMenu.AddItem("Cutlass", "Use Cutlass", true);
-            itemMenu.AddItem("Blade", "Use Blade of the Ruined King", true);
-            itemMenu.AddItem(new MenuItem(_parentAssembly.GetNamespace() + ".Items.azeazzaeae", ""));
-            itemMenu.AddItem("BladeEnemyEHP", "Enemy HP Percentage", new Slider(80, 100, 0));
-            itemMenu.AddItem("BladeEnemyMHP", "My HP Percentage", new Slider(80, 100, 0));
-
-            Menu.AddSubMenu(itemMenu);
 
             var miscMenu = new Menu("Misc", _parentAssembly.GetNamespace() + ".Misc");
             var miscAutoRMenu = new Menu("Auto R", _parentAssembly.GetNamespace() + ".Misc.AutoR");
